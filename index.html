@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GANA AHORA</title>
+<title>GANAR AHORA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -64,8 +64,8 @@ hr{border:0;border-top:2px dashed #cfc9a6;margin:16px 0}
 <div class="wrap">
   <header>
     <div>
-      <h1>GANA AHORA</h1>
-      <p class="slogan">Ganar nunca había sido tan fácil</p>
+      <h1>GANAR AHORA</h1>
+      <p class="slogan">GANAR nunca había sido tan fácil</p>
     </div>
     <div class="online" title="Personas conectadas ahora"><span class="dot"></span><span><b id="online">0</b> conectados</span></div>
   </header>
@@ -80,9 +80,9 @@ hr{border:0;border-top:2px dashed #cfc9a6;margin:16px 0}
   </section>
 
   <section class="textos" id="textos" aria-label="Descripciones">
-    <div class="txt"><h2>VALOR</h2><p id="v1" class="vacio">Sin descripción todavía.</p></div>
-    <div class="txt"><h2>LOTERIA</h2><p id="v2" class="vacio">Sin descripción todavía.</p></div>
-    <div class="txt"><h2>HORA</h2><p id="v3" class="vacio">Sin descripción todavía.</p></div>
+    <div class="txt"><h2>TEXTO 1</h2><p id="v1" class="vacio">Sin descripción todavía.</p></div>
+    <div class="txt"><h2>TEXTO 2</h2><p id="v2" class="vacio">Sin descripción todavía.</p></div>
+    <div class="txt"><h2>TEXTO 3</h2><p id="v3" class="vacio">Sin descripción todavía.</p></div>
   </section>
 
   <div id="barra">
@@ -195,6 +195,7 @@ for (let i = 0; i < 100; i++) {
   li.innerHTML = `<b>${i}</b><span id="l${i}"></span>`;
   lista.appendChild(li);
 }
+const yaTiene = u => Object.values(taken).filter(x => x === u).length;
 function pintar() {
   grid.querySelectorAll(".cel").forEach(b => {
     const n = +b.dataset.n, t = taken[n];
@@ -203,8 +204,8 @@ function pintar() {
     b.disabled = !!t;
     $("l" + n).textContent = t || "";
   });
-  const quedan = cfg.max - sel.size;
-  $("barraTxt").textContent = pick ? `${pick.u}: elegiste ${sel.size} de ${cfg.max}` : "";
+  const ya = pick ? yaTiene(pick.u) : 0;
+  $("barraTxt").textContent = pick ? `${pick.u}: elegiste ${sel.size} de ${Math.max(0, cfg.max - ya)} disponibles` + (ya ? ` (ya tenías ${ya})` : "") : "";
   $("barra").classList.toggle("on", !!pick);
   $("btnGuardar").disabled = !sel.size;
   $("estadoTxt").textContent = cfg.enabled
@@ -216,7 +217,7 @@ function pintar() {
 function clickNum(n) {
   if (!pick) { alert("Pulsa «Elegir mis números» para empezar."); return; }
   if (sel.has(n)) sel.delete(n);
-  else if (sel.size >= cfg.max) { alert(`Solo puedes elegir hasta ${cfg.max}.`); return; }
+  else if (sel.size + yaTiene(pick.u) >= cfg.max) { alert(`Solo puedes tener hasta ${cfg.max} número${cfg.max === 1 ? "" : "s"} en total.`); return; }
   else sel.add(n);
   pintar();
 }
@@ -265,7 +266,7 @@ $("eUsuario").oninput = e => e.target.value = norm(e.target.value);
 $("eContinuar").onclick = async () => {
   const u = norm($("eUsuario").value), code = $("eCodigo").value.trim();
   if (!u || !code) return $("eErr").textContent = "Escribe tu usuario y tu código de acceso.";
-  if (Object.values(taken).includes(u)) return $("eErr").textContent = "Ya tienes números elegidos. No puedes elegir más.";
+  if (yaTiene(u) >= cfg.max) return $("eErr").textContent = `Ya elegiste el máximo de ${cfg.max} número${cfg.max === 1 ? "" : "s"}. No puedes elegir más.`;
   $("eContinuar").disabled = true; $("eErr").textContent = "Verificando…";
   try {
     /* Firebase solo acepta esta escritura si el código es el correcto */
@@ -283,7 +284,7 @@ function cancelar() { pick = null; sel.clear(); pintar(); }
 $("btnCancelar").onclick = cancelar;
 $("btnGuardar").onclick = async () => {
   if (!sel.size) return;
-  const up = {}; up["claims/" + pick.u] = {code: pick.code, count: sel.size};
+  const up = {}; up["claims/" + pick.u] = {code: pick.code, count: yaTiene(pick.u) + sel.size};
   sel.forEach(n => up["taken/" + n] = pick.u);
   try {
     await update(ref(db), up);
