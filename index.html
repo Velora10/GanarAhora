@@ -1,4 +1,4 @@
-GANAR AHORA<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
@@ -49,6 +49,13 @@ input{font:inherit;width:100%;padding:10px;border:2px solid var(--tinta);border-
 .req small{display:block;color:#555}
 .req .fila{margin-top:8px}
 .req input{width:110px}
+.textos{display:grid;gap:10px;margin-bottom:20px}
+.txt{background:var(--crema2);border:2px solid var(--tinta);border-radius:12px;padding:12px 14px}
+.txt h2{font-size:1.05rem;margin:0 0 4px;color:var(--trebol-o)}
+.txt p{margin:0;white-space:pre-wrap;word-break:break-word}
+.txt p.vacio{color:#7b7968;font-style:italic}
+textarea{font:inherit;width:100%;padding:10px;border:2px solid var(--tinta);border-radius:10px;background:#fff;resize:vertical;min-height:70px}
+textarea:focus-visible{outline:3px solid var(--trebol);outline-offset:2px}
 hr{border:0;border-top:2px dashed #cfc9a6;margin:16px 0}
 @media (prefers-reduced-motion:reduce){.dot{animation:none}}
 </style>
@@ -70,6 +77,12 @@ hr{border:0;border-top:2px dashed #cfc9a6;margin:16px 0}
       <button id="btnSolicitar">Solicitar ingreso</button>
       <button class="link" id="btnAdmin">Administrador</button>
     </div>
+  </section>
+
+  <section class="textos" id="textos" aria-label="Descripciones">
+    <div class="txt"><h2>TEXTO 1</h2><p id="v1" class="vacio">Sin descripción todavía.</p></div>
+    <div class="txt"><h2>TEXTO 2</h2><p id="v2" class="vacio">Sin descripción todavía.</p></div>
+    <div class="txt"><h2>TEXTO 3</h2><p id="v3" class="vacio">Sin descripción todavía.</p></div>
   </section>
 
   <div id="barra">
@@ -132,6 +145,15 @@ hr{border:0;border-top:2px dashed #cfc9a6;margin:16px 0}
   </div>
   <div class="fila"><button class="peligro" id="pReset">Reiniciar selecciones</button></div>
   <p class="err" id="pErr"></p>
+  <hr>
+  <h3>Textos de la página</h3>
+  <label for="pT1">TEXTO 1</label>
+  <textarea id="pT1" maxlength="500"></textarea>
+  <label for="pT2">TEXTO 2</label>
+  <textarea id="pT2" maxlength="500"></textarea>
+  <label for="pT3">TEXTO 3</label>
+  <textarea id="pT3" maxlength="500"></textarea>
+  <div class="fila"><button class="main" id="pGuardarTextos">Guardar textos</button></div>
   <hr>
   <h3>Solicitudes de ingreso</h3>
   <div id="pReqs">Sin solicitudes.</div>
@@ -202,6 +224,15 @@ function clickNum(n) {
 /* ---------- Datos en tiempo real ---------- */
 onValue(ref(db, "config"), s => { const v = s.val(); if (v) cfg = {max: +v.max || 1, enabled: !!v.enabled}; $("pMax").value = cfg.max; if (pick && !cfg.enabled) cancelar(); pintar(); });
 onValue(ref(db, "taken"), s => { taken = s.val() || {}; sel.forEach(n => { if (taken[n]) sel.delete(n); }); pintar(); });
+onValue(ref(db, "textos"), s => {
+  const v = s.val() || {};
+  [1, 2, 3].forEach(n => {
+    const t = (v["t" + n] || "").toString(), p = $("v" + n), ta = $("pT" + n);
+    p.textContent = t || "Sin descripción todavía.";
+    p.classList.toggle("vacio", !t);
+    if (document.activeElement !== ta) ta.value = t;
+  });
+});
 onValue(ref(db, ".info/connected"), s => {
   if (!s.val()) return;
   const r = push(ref(db, "presence"));
@@ -286,6 +317,10 @@ $("pGuardarMax").onclick = async () => {
 };
 $("pToggle").onclick = async () => {
   try { await set(ref(db, "config"), {max: cfg.max, enabled: !cfg.enabled}); pe(""); } catch (e) { pe("No tienes permiso."); }
+};
+$("pGuardarTextos").onclick = async () => {
+  const t = {t1: $("pT1").value.trim().slice(0, 500), t2: $("pT2").value.trim().slice(0, 500), t3: $("pT3").value.trim().slice(0, 500)};
+  try { await set(ref(db, "textos"), t); pe("Textos guardados."); } catch (e) { pe("No tienes permiso para guardar los textos."); }
 };
 $("pReset").onclick = async () => {
   if (!confirm("¿Borrar TODAS las selecciones? Los números quedarán libres y todos podrán elegir de nuevo.")) return;
