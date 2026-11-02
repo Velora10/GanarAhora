@@ -84,8 +84,8 @@ hr{border:0;border-top:2px dashed #cfc9a6;margin:16px 0}
   </section>
 
   <section class="textos" id="textos" aria-label="Descripciones">
-    <div class="txt"><h2>VALOR</h2><p id="v1" class="vacio">Sin descripción todavía.</p></div>
-    <div class="txt"><h2>LOTERIA</h2><p id="v2" class="vacio">Sin descripción todavía.</p></div>
+    <div class="txt"><h2>TEXT1</h2><p id="v1" class="vacio">Sin descripción todavía.</p></div>
+    <div class="txt"><h2>TEXT2</h2><p id="v2" class="vacio">Sin descripción todavía.</p></div>
     <div class="txt"><h2>HORA</h2><p id="v3" class="vacio">Sin descripción todavía.</p></div>
   </section>
 
@@ -357,8 +357,9 @@ function pintarElegidos() {
   const total = Object.keys(taken).length, val = Object.keys(taken).filter(n => validos[n]).length;
   $("pResumen").textContent = total ? `${us.length} persona${us.length === 1 ? "" : "s"} · ${total} número${total === 1 ? "" : "s"} elegidos · ${val} válido${val === 1 ? "" : "s"} · ${total - val} sin validar` : "Sin números elegidos.";
   $("pElegidos").innerHTML = us.map(u => {
-    const ns = porUsuario[u].sort((a, b) => a - b), r = reqs[u];
+    const ns = porUsuario[u].sort((a, b) => a - b), r = reqs[u], todos = ns.every(n => validos[n]);
     return `<div class="req"><b>${esc((r && r.name) || u)}</b><small>Usuario: ${esc(u)} · ${ns.length} número${ns.length === 1 ? "" : "s"}</small>
+      <div class="fila" style="margin-top:8px"><button data-p="${esc(u)}">${todos ? "Desmarcar todos" : "Marcar todos"}</button></div>
       <div class="nums">${ns.map(n => `<label class="${validos[n] ? "ok" : ""}"><input type="checkbox" data-v="${n}" ${validos[n] ? "checked" : ""}> ${n}</label>`).join("")}</div></div>`;
   }).join("");
 }
@@ -367,6 +368,13 @@ $("pElegidos").onchange = async e => {
   if (n === undefined) return;
   try { await update(ref(db), {["validados/" + n]: e.target.checked ? true : null}); pe(""); }
   catch (err) { e.target.checked = !e.target.checked; pe("No se pudo guardar la validación. Revisa las reglas de Firebase."); }
+};
+$("pElegidos").onclick = async e => {
+  const u = e.target.dataset.p;
+  if (u === undefined) return;
+  const ns = Object.keys(taken).filter(n => taken[n] === u), marcar = !ns.every(n => validos[n]), up = {};
+  ns.forEach(n => up["validados/" + n] = marcar ? true : null);
+  try { await update(ref(db), up); pe(""); } catch (err) { pe("No se pudo guardar. Revisa las reglas de Firebase."); }
 };
 $("pMarcarTodos").onclick = async () => {
   const up = {}; Object.keys(taken).forEach(n => up["validados/" + n] = true);
